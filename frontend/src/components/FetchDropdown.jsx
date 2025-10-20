@@ -1,17 +1,19 @@
-// component that fetches data
 import { useState } from "react";
 
-// DANGEROUS: These queries are directly visible in browser dev tools
-const PREDEFINED_QUERIES = {
-  getAllUsers: `SELECT * FROM users`,
-  getUserEmails: `SELECT id, email FROM users`,
-  getUsersAlphabetically: `SELECT * FROM users ORDER BY last_name`,
-  getEmailCount: `SELECT COUNT(*) FROM users`,
-  // route for creating a user via the backend API
-  createNewUser: '/api/execute-sql/createNewUser',
+const API_ROUTES = {
+  getAllUsers: '/api/users/all',
+  getUsersAlphabetically: '/api/users/alphabetical',
+  getEmailCount: '/api/users/email-count',
+  createNewUser: '/api/users',
 };
 
-const ExposedSQLExample = () => {
+const SQL_EQUIVALENTS = {
+  getAllUsers: 'SELECT * FROM users;',
+  getUsersAlphabetically: 'SELECT * FROM users ORDER BY last_name ASC;',
+  getEmailCount: 'SELECT COUNT(*) FROM users;',
+};
+
+const SecureReactComponent = () => {
   const [selectedQuery, setSelectedQuery] = useState("getAllUsers");
   const [results, setResults] = useState([]);
   const [createForm, setCreateForm] = useState({
@@ -25,46 +27,21 @@ const ExposedSQLExample = () => {
   const [submitErrorMessage, setSubmitErrorMessage] = useState('');
   const [submitSuccessMessage, setSubmitSuccessMessage] = useState('');
 
-
-  // These connection details would be visible in the browser
-  const DB_CONFIG = {
-    host: "dpg-d3q19sripnbc73a8ggsg-a",
-    database: "disc_render_demo",
-    user: "disc_render_demo_user",
-    // NEVER put credentials in frontend code!
-    password: "LVhc5eTfZRoh34INttBOKurhqYv21X7s",
-  };
-
-  const executeQuery = async () => {
+  // Redundant function for fetching all users
+  const fetchAllUsers = async () => {
     setQueryErrorMessage('');
     setQueryLoading(true);
     setResults([]);
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/execute-sql`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            query: PREDEFINED_QUERIES[selectedQuery],
-            config: DB_CONFIG, // NEVER send this!
-          }),
-        }
+        `${import.meta.env.VITE_API_URL}${API_ROUTES.getAllUsers}`
       );
-
-      // try to parse body (json preferred) (this is why i hate JS)
-      const text = await response.text();
-      let data;
-      try { data = text ? JSON.parse(text) : null; } catch { data = text; }
-
+      const data = await response.json();
       if (!response.ok) {
-        // extract message from json body when possible
-        const msg = data && typeof data === 'object' && data.error ? data.error : (typeof data === 'string' ? data : response.statusText);
+        const msg = data?.error || response.statusText;
         setQueryErrorMessage(`(${response.status}) ${msg}`);
         return;
       }
-
-      // success
       setResults(Array.isArray(data) ? data : (data ? [data] : []));
     } catch (err) {
       setQueryErrorMessage(err?.message || String(err));
@@ -74,18 +51,68 @@ const ExposedSQLExample = () => {
     }
   };
 
+  // Redundant function for fetching users alphabetically
+  const fetchUsersAlphabetically = async () => {
+    setQueryErrorMessage('');
+    setQueryLoading(true);
+    setResults([]);
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}${API_ROUTES.getUsersAlphabetically}`
+      );
+      const data = await response.json();
+      if (!response.ok) {
+        const msg = data?.error || response.statusText;
+        setQueryErrorMessage(`(${response.status}) ${msg}`);
+        return;
+      }
+      setResults(Array.isArray(data) ? data : (data ? [data] : []));
+    } catch (err) {
+      setQueryErrorMessage(err?.message || String(err));
+      console.error('Query failed:', err);
+    } finally {
+      setQueryLoading(false);
+    }
+  };
+
+  // Redundant function for fetching email count
+  const fetchEmailCount = async () => {
+    setQueryErrorMessage('');
+    setQueryLoading(true);
+    setResults([]);
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}${API_ROUTES.getEmailCount}`
+      );
+      const data = await response.json();
+      if (!response.ok) {
+        const msg = data?.error || response.statusText;
+        setQueryErrorMessage(`(${response.status}) ${msg}`);
+        return;
+      }
+      setResults(Array.isArray(data) ? data : (data ? [data] : []));
+    } catch (err) {
+      setQueryErrorMessage(err?.message || String(err));
+      console.error('Query failed:', err);
+    } finally {
+      setQueryLoading(false);
+    }
+  };
+
+
   const handleCreateInputChange = (e) => {
     const { name, value } = e.target;
     setCreateForm(prev => ({ ...prev, [name]: value }));
   };
 
+  // This is the 4th distinct operation function
   const handleCreateUser = async (e) => {
     e.preventDefault();
     setSubmitErrorMessage('');
     setSubmitSuccessMessage('');
     setSubmitLoading(true);
     try {
-      const resp = await fetch(`${import.meta.env.VITE_API_URL}${PREDEFINED_QUERIES.createNewUser}`, {
+      const resp = await fetch(`${import.meta.env.VITE_API_URL}${API_ROUTES.createNewUser}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -95,12 +122,10 @@ const ExposedSQLExample = () => {
         }),
       });
 
-      const text = await resp.text();
-      let data;
-      try { data = text ? JSON.parse(text) : null; } catch { data = text; }
+      const data = await resp.json();
 
       if (!resp.ok) {
-        const errMsg = data && data.error ? data.error : (typeof data === 'string' ? data : resp.statusText);
+        const errMsg = data?.error || resp.statusText;
         setSubmitErrorMessage(`(${resp.status}) ${errMsg}`);
         return;
       }
@@ -108,17 +133,29 @@ const ExposedSQLExample = () => {
       // success
       setCreateForm({ first_name: '', last_name: '', email: '' });
       setSubmitSuccessMessage('User created successfully');
-      // refresh results if viewing all users
-      if (selectedQuery === 'getAllUsers') await executeQuery();
+      if (selectedQuery === 'getAllUsers') await fetchAllUsers();
     } catch (err) {
       setSubmitErrorMessage(err?.message || String(err));
       console.error('Create user failed:', err);
     } finally {
       setSubmitLoading(false);
-      // clear success message after a short delay
-      if (submitSuccessMessage) {
-        setTimeout(() => setSubmitSuccessMessage(''), 3000);
-      }
+      setTimeout(() => setSubmitSuccessMessage(''), 3000);
+    }
+  };
+
+  const handleRunAction = () => {
+    switch (selectedQuery) {
+      case 'getAllUsers':
+        fetchAllUsers();
+        break;
+      case 'getUsersAlphabetically':
+        fetchUsersAlphabetically();
+        break;
+      case 'getEmailCount':
+        fetchEmailCount();
+        break;
+      default:
+        console.error('Invalid action selected');
     }
   };
 
@@ -134,7 +171,7 @@ const ExposedSQLExample = () => {
       </div>
 
       <div className="bg-white shadow rounded-lg p-6">
-        <h2 className="text-xl font-bold text-black mb-4">Database Query Interface</h2>
+        <h2 className="text-xl font-bold text-black mb-4">Secure Database Interface</h2>
 
         <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
           <div style={{ flex: '1 1 320px', minWidth: 260 }}>
@@ -151,13 +188,13 @@ const ExposedSQLExample = () => {
 
           <div style={{ flex: '1 1 320px', minWidth: 260 }}>
             <div className="mb-4">
-              <label className="block text-sm font-medium text-black mb-2">Select Query:</label>
+              <label className="block text-sm font-medium text-black mb-2">Select Action:</label>
               <select
                 value={selectedQuery}
                 onChange={(e) => setSelectedQuery(e.target.value)}
                 className="w-full border rounded-md p-2 text-black"
               >
-                {Object.keys(PREDEFINED_QUERIES).map((key) => (
+                {Object.keys(API_ROUTES).filter(k => k !== 'createNewUser').map((key) => (
                   <option key={key} value={key}>
                     {key}
                   </option>
@@ -166,21 +203,26 @@ const ExposedSQLExample = () => {
             </div>
 
             <div className="mb-4">
-              <label className="block text-sm font-medium text-black mb-2">SQL to be executed:</label>
+              <label className="block text-sm font-medium text-black mb-2">API Route to be called:</label>
               <pre className="bg-gray-50 p-3 rounded border text-black text-wrap">
-                {selectedQuery === 'createNewUser' ?
-                  'Create new user on the left, don\'t press query button below'
-                  : PREDEFINED_QUERIES[selectedQuery]}
+                GET {API_ROUTES[selectedQuery]}
+              </pre>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-black mb-2">Equivalent SQL Query (on backend):</label>
+              <pre className="bg-gray-50 p-3 rounded border text-black text-wrap">
+                {SQL_EQUIVALENTS[selectedQuery]}
               </pre>
             </div>
 
             <div>
                   <button
-                    onClick={executeQuery}
-                    disabled={queryLoading || selectedQuery === 'createNewUser'}
-                    className={`bg-blue-500 text-white px-4 py-2 rounded ${queryLoading || selectedQuery === 'createNewUser' ? 'opacity-60 cursor-not-allowed' : 'hover:bg-blue-600'}`}
+                    onClick={handleRunAction}
+                    disabled={queryLoading}
+                    className={`bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 ${queryLoading ? 'opacity-60 cursor-wait' : ''}`}
                   >
-                    {queryLoading ? 'Running…' : 'Run Query'}
+                    {queryLoading ? 'Running…' : 'Run Action'}
                   </button>
                 </div>
           </div>
@@ -189,7 +231,7 @@ const ExposedSQLExample = () => {
         {results.length > 0 && (
           <div className="mt-6 text-black">
             <h3 className="font-bold mb-2">Results:</h3>
-            <div className="">
+            <div>
               <table className="min-w-full border">
                 <thead>
                   <tr className="bg-gray-50">
@@ -215,18 +257,13 @@ const ExposedSQLExample = () => {
         )}
       </div>
 
-      {/* Query error block */}
       {queryErrorMessage && (
         <div className='border border-red-300 p-2 text-red-800 bg-red-100 mt-4'>
-          <div className="font-semibold">Error running query</div>
+          <div className="font-semibold">Error running action</div>
           <div>{queryErrorMessage}</div>
-          <div style={{ marginTop: 8 }}>
-            <button onClick={executeQuery} disabled={queryLoading} className="bg-gray-200 px-2 py-1 rounded">Retry</button>
-          </div>
         </div>
       )}
 
-      {/* Submission result block */}
       {(submitErrorMessage || submitSuccessMessage) && (
         <div className={`border p-2 mt-4 ${submitErrorMessage ? 'border-red-300 text-red-800 bg-red-100' : 'border-green-300 text-green-800 bg-green-100'}`}>
           {submitErrorMessage ? (
@@ -253,4 +290,5 @@ const ExposedSQLExample = () => {
   );
 };
 
-export default ExposedSQLExample;
+export default SecureReactComponent;
+
