@@ -27,7 +27,7 @@ export default function FetchDropdown() {
   const [submitErrorMessage, setSubmitErrorMessage] = useState('');
   const [submitSuccessMessage, setSubmitSuccessMessage] = useState('');
 
-  // Redundant function for fetching all users
+  // get all users
   const fetchAllUsers = async () => {
     setQueryErrorMessage('');
     setQueryLoading(true);
@@ -51,7 +51,7 @@ export default function FetchDropdown() {
     }
   };
 
-  // Redundant function for fetching users alphabetically
+  // get alphabetically ordered users
   const fetchUsersAlphabetically = async () => {
     setQueryErrorMessage('');
     setQueryLoading(true);
@@ -75,7 +75,7 @@ export default function FetchDropdown() {
     }
   };
 
-  // Redundant function for fetching email count
+  // get email count
   const fetchEmailCount = async () => {
     setQueryErrorMessage('');
     setQueryLoading(true);
@@ -105,7 +105,7 @@ export default function FetchDropdown() {
     setCreateForm(prev => ({ ...prev, [name]: value }));
   };
 
-  // This is the 4th distinct operation function
+  //  new user
   const handleCreateUser = async (e) => {
     e.preventDefault();
     setSubmitErrorMessage('');
@@ -171,7 +171,7 @@ export default function FetchDropdown() {
       </div>
 
       <div className="bg-white shadow rounded-lg p-6">
-        <h2 className="text-xl font-bold text-black mb-4">Secure Database Interface</h2>
+        <h2 className="text-xl font-bold text-black mb-4">Super Epic DB Interface</h2>
 
         <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
           <div style={{ flex: '1 1 320px', minWidth: 260 }}>
