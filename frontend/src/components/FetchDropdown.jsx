@@ -13,7 +13,7 @@ const SQL_EQUIVALENTS = {
   getEmailCount: 'SELECT COUNT(*) FROM users;',
 };
 
-const SecureReactComponent = () => {
+export default function FetchDropdown() {
   const [selectedQuery, setSelectedQuery] = useState("getAllUsers");
   const [results, setResults] = useState([]);
   const [createForm, setCreateForm] = useState({
@@ -34,7 +34,7 @@ const SecureReactComponent = () => {
     setResults([]);
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}${API_ROUTES.getAllUsers}`
+        `${import.meta.env.VITE_API_URL}${API_ROUTES[selectedQuery]}`
       );
       const data = await response.json();
       if (!response.ok) {
@@ -58,7 +58,7 @@ const SecureReactComponent = () => {
     setResults([]);
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}${API_ROUTES.getUsersAlphabetically}`
+        `${import.meta.env.VITE_API_URL}${API_ROUTES[selectedQuery]}`
       );
       const data = await response.json();
       if (!response.ok) {
@@ -82,7 +82,7 @@ const SecureReactComponent = () => {
     setResults([]);
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}${API_ROUTES.getEmailCount}`
+        `${import.meta.env.VITE_API_URL}${API_ROUTES[selectedQuery]}`
       );
       const data = await response.json();
       if (!response.ok) {
@@ -289,6 +289,4 @@ const SecureReactComponent = () => {
     </div>
   );
 };
-
-export default SecureReactComponent;
 
